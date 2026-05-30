@@ -17,6 +17,8 @@ export interface EpisodeResult {
 export interface FantasyPlayer {
   id: string;
   name: string;
+  email: string | null;
+  user_id: string | null;
   created_at: string;
 }
 

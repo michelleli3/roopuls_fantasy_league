@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getPlayers,
+  getPlayerByUserId,
+  getPlayerByEmail,
   addPlayer,
   updatePlayer,
   getFantasyTeams,
@@ -12,14 +14,30 @@ export function usePlayers() {
   return useQuery({ queryKey: ['fantasy_players'], queryFn: getPlayers });
 }
 
+export function usePlayerByUserId(userId: string | null) {
+  return useQuery({
+    queryKey: ['player_by_user_id', userId],
+    queryFn: () => getPlayerByUserId(userId!),
+    enabled: !!userId,
+  });
+}
+
 export function useFantasyTeams() {
   return useQuery({ queryKey: ['fantasy_team'], queryFn: getFantasyTeams });
+}
+
+export function usePlayerByEmail(email: string | null) {
+  return useQuery({
+    queryKey: ['player_by_email', email],
+    queryFn: () => getPlayerByEmail(email!),
+    enabled: !!email,
+  });
 }
 
 export function useAddPlayer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (name: string) => addPlayer(name),
+    mutationFn: ({ name, email }: { name: string; email: string }) => addPlayer(name, email),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['fantasy_players'] }),
   });
 }

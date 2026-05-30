@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { usePlayers } from '../../hooks/usePlayers';
 import { useContestants, useEpisodeResults } from '../../hooks/useContestants';
 import { useSeasonPicks, useEpisodePicks } from '../../hooks/usePicks';
@@ -56,9 +57,19 @@ export default function PlayerView() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-5 text-center">
-        <h1 className="text-2xl font-bold text-purple-700">Drag Race Fantasy League</h1>
-        <p className="text-sm text-gray-400 mt-1">Season 18 Standings</p>
+      <header className="bg-white border-b px-6 py-5">
+        <div className="max-w-2xl mx-auto flex items-center justify-between">
+          <div className="text-center flex-1">
+            <h1 className="text-2xl font-bold text-purple-700">Drag Race Fantasy League</h1>
+            <p className="text-sm text-gray-400 mt-1">Season 18 Standings</p>
+          </div>
+          <Link
+            to="/picks"
+            className="text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
+          >
+            Make Picks →
+          </Link>
+        </div>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-3">

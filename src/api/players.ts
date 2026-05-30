@@ -10,10 +10,20 @@ export async function getPlayers(): Promise<FantasyPlayer[]> {
   return data;
 }
 
-export async function addPlayer(name: string): Promise<FantasyPlayer> {
+export async function getPlayerByEmail(email: string): Promise<FantasyPlayer | null> {
   const { data, error } = await supabase
     .from('fantasy_players')
-    .insert({ name })
+    .select('*')
+    .eq('email', email)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function addPlayer(name: string, email: string): Promise<FantasyPlayer> {
+  const { data, error } = await supabase
+    .from('fantasy_players')
+    .insert({ name, email })
     .select()
     .single();
   if (error) throw error;
@@ -22,7 +32,7 @@ export async function addPlayer(name: string): Promise<FantasyPlayer> {
 
 export async function updatePlayer(
   id: string,
-  updates: Partial<Pick<FantasyPlayer, 'name'>>
+  updates: Partial<Pick<FantasyPlayer, 'name' | 'email'>>
 ): Promise<FantasyPlayer> {
   const { data, error } = await supabase
     .from('fantasy_players')
@@ -30,6 +40,16 @@ export async function updatePlayer(
     .eq('id', id)
     .select()
     .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function getPlayerByUserId(userId: string): Promise<FantasyPlayer | null> {
+  const { data, error } = await supabase
+    .from('fantasy_players')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
   if (error) throw error;
   return data;
 }
