@@ -25,3 +25,19 @@ export interface FantasyTeam {
   fantasy_player_id: string;
   contestant_id: string;
 }
+
+export interface SeasonPick {
+  id: string;
+  fantasy_player_id: string;
+  contestant_id: string;
+  repick_count: number;
+  created_at: string;
+}
+
+export interface EpisodePick {
+  id: string;
+  fantasy_player_id: string;
+  contestant_id: string;
+  episode_number: number;
+  pick_type: 'winner' | 'loser';
+}

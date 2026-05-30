@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import LeagueManager from './LeagueManager';
+import PlayerManager from './PlayerManager';
 
 type Tab = 'league' | 'players';
 
@@ -38,11 +39,7 @@ export default function AdminView() {
 
       <main className="max-w-4xl mx-auto px-6 py-8">
         {tab === 'league' && <LeagueManager />}
-        {tab === 'players' && (
-          <div className="text-center text-gray-400 py-16 text-sm">
-            Player Manager coming in Phase 3.
-          </div>
-        )}
+        {tab === 'players' && <PlayerManager />}
       </main>
     </div>
   );
