@@ -1,0 +1,328 @@
+{
+  "info": {
+    "name": "Drag Race Fantasy League",
+    "_postman_id": "drag-race-fantasy-league",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://ymrbfiuknkrgtqnzptua.supabase.co/rest/v1"
+    },
+    {
+      "key": "anon_key",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltcmJmaXVrbmtyZ3RxbnpwdHVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMTQ1NjIsImV4cCI6MjA5NTY5MDU2Mn0.4gMvd7__aGZd4i-lyZdwaqlTWYZtx3dGatjYLWcGZzM"
+    },
+    {
+      "key": "contestant_id",
+      "value": "replace-with-real-id"
+    },
+    {
+      "key": "episode_result_id",
+      "value": "replace-with-real-id"
+    },
+    {
+      "key": "fantasy_player_id",
+      "value": "replace-with-real-id"
+    },
+    {
+      "key": "fantasy_team_id",
+      "value": "replace-with-real-id"
+    }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      { "key": "key", "value": "apikey" },
+      { "key": "value", "value": "{{anon_key}}" },
+      { "key": "in", "value": "header" }
+    ]
+  },
+  "item": [
+    {
+      "name": "Contestants",
+      "item": [
+        {
+          "name": "Get all contestants",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{anon_key}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/contestants?order=name",
+              "host": ["{{base_url}}"],
+              "path": ["contestants"],
+              "query": [{ "key": "order", "value": "name" }]
+            }
+          }
+        },
+        {
+          "name": "Add contestant",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{anon_key}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Contestant Name\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/contestants",
+              "host": ["{{base_url}}"],
+              "path": ["contestants"]
+            }
+          }
+        },
+        {
+          "name": "Update contestant",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{anon_key}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"active\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/contestants?id=eq.{{contestant_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["contestants"],
+              "query": [{ "key": "id", "value": "eq.{{contestant_id}}" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Episode Results",
+      "item": [
+        {
+          "name": "Get all episode results",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{anon_key}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/episode_results?order=episode_number",
+              "host": ["{{base_url}}"],
+              "path": ["episode_results"],
+              "query": [{ "key": "order", "value": "episode_number" }]
+            }
+          }
+        },
+        {
+          "name": "Get results by contestant",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{anon_key}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/episode_results?contestant_id=eq.{{contestant_id}}&order=episode_number",
+              "host": ["{{base_url}}"],
+              "path": ["episode_results"],
+              "query": [
+                { "key": "contestant_id", "value": "eq.{{contestant_id}}" },
+                { "key": "order", "value": "episode_number" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add episode result",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{anon_key}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contestant_id\": \"{{contestant_id}}\",\n  \"episode_number\": 1,\n  \"placement\": \"WIN\",\n  \"lip_synced\": false,\n  \"challenge_win\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/episode_results",
+              "host": ["{{base_url}}"],
+              "path": ["episode_results"]
+            }
+          }
+        },
+        {
+          "name": "Update episode result",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{anon_key}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placement\": \"HIGH\",\n  \"lip_synced\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/episode_results?id=eq.{{episode_result_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["episode_results"],
+              "query": [{ "key": "id", "value": "eq.{{episode_result_id}}" }]
+            }
+          }
+        },
+        {
+          "name": "Delete episode result",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{anon_key}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/episode_results?id=eq.{{episode_result_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["episode_results"],
+              "query": [{ "key": "id", "value": "eq.{{episode_result_id}}" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fantasy Players",
+      "item": [
+        {
+          "name": "Get all fantasy players",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{anon_key}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/fantasy_players?order=name",
+              "host": ["{{base_url}}"],
+              "path": ["fantasy_players"],
+              "query": [{ "key": "order", "value": "name" }]
+            }
+          }
+        },
+        {
+          "name": "Add fantasy player",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{anon_key}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Player Name\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/fantasy_players",
+              "host": ["{{base_url}}"],
+              "path": ["fantasy_players"]
+            }
+          }
+        },
+        {
+          "name": "Update fantasy player",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{anon_key}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Player Name\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/fantasy_players?id=eq.{{fantasy_player_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["fantasy_players"],
+              "query": [{ "key": "id", "value": "eq.{{fantasy_player_id}}" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fantasy Team",
+      "item": [
+        {
+          "name": "Get all team assignments",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{anon_key}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/fantasy_team",
+              "host": ["{{base_url}}"],
+              "path": ["fantasy_team"]
+            }
+          }
+        },
+        {
+          "name": "Get team by fantasy player",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{anon_key}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/fantasy_team?fantasy_player_id=eq.{{fantasy_player_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["fantasy_team"],
+              "query": [{ "key": "fantasy_player_id", "value": "eq.{{fantasy_player_id}}" }]
+            }
+          }
+        },
+        {
+          "name": "Assign contestant to player",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{anon_key}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Prefer", "value": "return=representation" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fantasy_player_id\": \"{{fantasy_player_id}}\",\n  \"contestant_id\": \"{{contestant_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/fantasy_team",
+              "host": ["{{base_url}}"],
+              "path": ["fantasy_team"]
+            }
+          }
+        },
+        {
+          "name": "Remove contestant from team",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{anon_key}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/fantasy_team?id=eq.{{fantasy_team_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["fantasy_team"],
+              "query": [{ "key": "id", "value": "eq.{{fantasy_team_id}}" }]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
