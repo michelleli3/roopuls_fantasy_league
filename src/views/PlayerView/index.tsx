@@ -505,34 +505,28 @@ function ScoreboardHeader({ currentEpisode, currentEpisodeName, narrow }: {
 
   return (
     <div style={{
-      textAlign: 'center', padding: narrow ? '16px 18px 18px' : '36px 28px 26px',
-      position: 'relative', overflow: 'hidden',
+      padding: narrow ? '16px 18px 18px' : '36px 28px 26px',
+      overflow: 'hidden',
       background: `radial-gradient(120% 90% at 50% -10%, ${ACCENT.key}22, transparent 60%)`,
     }}>
-      {/* On mobile: nav links sit above the title in normal flow */}
-      {narrow && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 14 }}>
-          {navLinks}
-        </div>
-      )}
-      <div style={{ fontFamily: 'Outfit, sans-serif', letterSpacing: '.4em', fontSize: 11, fontWeight: 700, color: G.muted, textTransform: 'uppercase' }}>
-        {eyebrow}
+      {/* Nav links always sit above the title in normal flow, right-aligned */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 14 }}>
+        {navLinks}
       </div>
-      <h1 style={{ margin: '10px 0 6px', fontFamily: 'Bodoni Moda, serif', fontWeight: 700, lineHeight: .95, fontSize: narrow ? 34 : 46, color: G.cream }}>
-        Category Is:{' '}
-        <span style={{ background: ACCENT.foil, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
-          Leaderboard Realness
-        </span>
-      </h1>
-      <div style={{ fontFamily: 'Pinyon Script, cursive', fontSize: narrow ? 26 : 30, color: G.pinkSoft, lineHeight: 1 }}>
-        Roopul's Fantasy League
-      </div>
-      {/* On desktop: nav links are absolute top-right */}
-      {!narrow && (
-        <div style={{ position: 'absolute', top: 16, right: 20, display: 'flex', gap: 8, alignItems: 'center' }}>
-          {navLinks}
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontFamily: 'Outfit, sans-serif', letterSpacing: '.4em', fontSize: 11, fontWeight: 700, color: G.muted, textTransform: 'uppercase' }}>
+          {eyebrow}
         </div>
-      )}
+        <h1 style={{ margin: '10px 0 6px', fontFamily: 'Bodoni Moda, serif', fontWeight: 700, lineHeight: .95, fontSize: narrow ? 34 : 46, color: G.cream }}>
+          Category Is:{' '}
+          <span style={{ background: ACCENT.foil, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
+            Leaderboard Realness
+          </span>
+        </h1>
+        <div style={{ fontFamily: 'Pinyon Script, cursive', fontSize: narrow ? 26 : 30, color: G.pinkSoft, lineHeight: 1 }}>
+          Roopul's Fantasy League
+        </div>
+      </div>
     </div>
   );
 }
