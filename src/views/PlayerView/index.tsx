@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
 import { usePlayers } from '../../hooks/usePlayers';
 import { useContestants, useEpisodeResults } from '../../hooks/useContestants';
 import { useSeasonPicks, useEpisodePicks } from '../../hooks/usePicks';
@@ -446,8 +447,23 @@ function RankRow({ p, narrow, open, onToggle, episodePicks, results, contestants
   );
 }
 
+function useIsAdmin() {
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setIsAdmin(data.session?.user.app_metadata.is_admin === true);
+    });
+  }, []);
+  return isAdmin;
+}
+
 // ── Header ────────────────────────────────────────────────────────────────────
 function ScoreboardHeader({ currentEpisode, narrow }: { currentEpisode: number; narrow: boolean }) {
+  const isAdmin = useIsAdmin();
+  const nextEpisode = currentEpisode + 1;
+  const eyebrow = currentEpisode > 0
+    ? `Season 18 · Episode ${currentEpisode} complete · Episode ${nextEpisode} up next`
+    : `Season 18 · Episode ${nextEpisode} coming up`;
   return (
     <div style={{
       textAlign: 'center', padding: narrow ? '26px 18px 18px' : '36px 28px 26px',
@@ -455,7 +471,7 @@ function ScoreboardHeader({ currentEpisode, narrow }: { currentEpisode: number; 
       background: `radial-gradient(120% 90% at 50% -10%, ${ACCENT.key}22, transparent 60%)`,
     }}>
       <div style={{ fontFamily: 'Outfit, sans-serif', letterSpacing: '.4em', fontSize: 11, fontWeight: 700, color: G.muted, textTransform: 'uppercase' }}>
-        Season 18{currentEpisode > 0 ? ` · Episode ${currentEpisode}` : ''}
+        {eyebrow}
       </div>
       <h1 style={{ margin: '10px 0 6px', fontFamily: 'Bodoni Moda, serif', fontWeight: 700, lineHeight: .95, fontSize: narrow ? 34 : 46, color: G.cream }}>
         Category Is:{' '}
@@ -466,16 +482,28 @@ function ScoreboardHeader({ currentEpisode, narrow }: { currentEpisode: number; 
       <div style={{ fontFamily: 'Pinyon Script, cursive', fontSize: narrow ? 26 : 30, color: G.pinkSoft, lineHeight: 1 }}>
         Roopul's Fantasy League
       </div>
-      <Link to="/picks" style={{
-        position: 'absolute', top: 16, right: 20,
-        fontFamily: 'Outfit, sans-serif', fontSize: 12, fontWeight: 700,
-        color: G.cream, background: `${ACCENT.key}22`,
-        border: `1px solid ${ACCENT.key}44`,
-        padding: '6px 14px', borderRadius: 999,
-        textDecoration: 'none', whiteSpace: 'nowrap', letterSpacing: '.03em',
-      }}>
-        Make Picks →
-      </Link>
+      <div style={{ position: 'absolute', top: 16, right: 20, display: 'flex', gap: 8, alignItems: 'center' }}>
+        {isAdmin && (
+          <Link to="/admin" style={{
+            fontFamily: 'Outfit, sans-serif', fontSize: 12, fontWeight: 700,
+            color: G.muted, background: 'rgba(169,143,196,.12)',
+            border: '1px solid rgba(169,143,196,.3)',
+            padding: '6px 14px', borderRadius: 999,
+            textDecoration: 'none', whiteSpace: 'nowrap', letterSpacing: '.03em',
+          }}>
+            Admin
+          </Link>
+        )}
+        <Link to="/picks" style={{
+          fontFamily: 'Outfit, sans-serif', fontSize: 12, fontWeight: 700,
+          color: G.cream, background: `${ACCENT.key}22`,
+          border: `1px solid ${ACCENT.key}44`,
+          padding: '6px 14px', borderRadius: 999,
+          textDecoration: 'none', whiteSpace: 'nowrap', letterSpacing: '.03em',
+        }}>
+          Make Picks →
+        </Link>
+      </div>
     </div>
   );
 }
