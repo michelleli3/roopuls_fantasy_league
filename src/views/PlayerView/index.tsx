@@ -180,8 +180,11 @@ function BreakdownPanel({ player, narrow, episodePicks, results, contestants }: 
   results: EpisodeResult[];
   contestants: Contestant[];
 }) {
+  const doneEpisodes = new Set(results.map(r => r.episode_number));
   const myPicks = episodePicks.filter(p => p.fantasy_player_id === player.id);
-  const eps = [...new Set(myPicks.map(p => p.episode_number))].sort((a, b) => b - a);
+  const eps = [...new Set(myPicks.map(p => p.episode_number))]
+    .filter(ep => doneEpisodes.has(ep))
+    .sort((a, b) => b - a);
 
   const breakdowns: EpBreakdown[] = eps.map(ep => {
     const epPicks = myPicks.filter(p => p.episode_number === ep);
