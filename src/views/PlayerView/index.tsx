@@ -12,35 +12,11 @@ import {
   WINNER_PICK_POINTS,
   LOSER_PICK_POINTS,
 } from '../../utils/scoring';
+import { G, ACCENT } from '../_glam/tokens';
+import { GlamHead, Momentum, PlacePill, ScorePill } from '../_glam/primitives';
 import type { EpisodeResult, EpisodePick, Contestant } from '../../types';
 
-// ── Tokens ────────────────────────────────────────────────────────────────────
-const G = {
-  ink: '#160a1e', ink2: '#221031', ink3: '#2c1640',
-  line: 'rgba(255,210,63,0.16)',
-  pink: '#ff2d92', pinkSoft: '#ff7ab8',
-  gold: '#ffd23f', goldDeep: '#e8a93c',
-  purple: '#9b5de5', cream: '#f6ecff', muted: '#a98fc4',
-  good: '#5be39b', bad: '#ff5d73',
-};
-
-const ACCENT = {
-  key: '#ffd23f',
-  foil: 'linear-gradient(135deg,#fff3c4,#ffd23f 40%,#e8a93c 62%,#fff3c4)',
-};
-
-const SEQUIN = 'radial-gradient(circle at 30% 30%, rgba(255,45,146,.5), transparent 60%), radial-gradient(circle at 70% 65%, rgba(155,93,229,.5), transparent 60%)';
-
-const PLACE_STYLE: Record<EpisodeResult['placement'], { bg: string; fg: string }> = {
-  WINNER: { bg: 'rgba(255,210,63,.18)',  fg: '#ffd23f' },
-  WIN:    { bg: 'rgba(255,45,146,.18)',  fg: '#ff7ab8' },
-  HIGH:   { bg: 'rgba(155,93,229,.22)',  fg: '#c4a0ff' },
-  SAFE:   { bg: 'rgba(169,143,196,.16)', fg: '#a98fc4' },
-  LOW:    { bg: 'rgba(232,169,60,.16)',  fg: '#e8a93c' },
-  BTM2:   { bg: 'rgba(255,93,115,.16)',  fg: '#ff8a98' },
-  ELIM:   { bg: 'rgba(255,93,115,.26)',  fg: '#ff5d73' },
-};
-
+// ── Scoreboard-specific layout constants ──────────────────────────────────────
 const METAL: Record<1 | 2 | 3, string> = { 1: ACCENT.key, 2: '#d9d9e3', 3: '#cd9b6a' };
 const PEDESTAL_H: Record<1 | 2 | 3, number> = { 1: 215, 2: 166, 3: 140 };
 const HEAD_SIZE_DESKTOP: Record<1 | 2 | 3, number> = { 1: 124, 2: 88, 3: 76 };
@@ -87,78 +63,6 @@ function useNarrow() {
     return () => window.removeEventListener('resize', fn);
   }, []);
   return narrow;
-}
-
-// ── Primitives ────────────────────────────────────────────────────────────────
-function GlamHead({ size = 96, ring = G.gold, name = '', glow = false, dim = false, avatarUrl = null }: {
-  size?: number; ring?: string; name?: string; glow?: boolean; dim?: boolean; avatarUrl?: string | null;
-}) {
-  const initials = name.split(' ').map(w => w[0]).slice(0, 2).join('');
-  return (
-    <div style={{
-      width: size, height: size, borderRadius: '50%', flexShrink: 0, padding: 3,
-      background: `linear-gradient(135deg, ${ring}, ${G.pink})`,
-      filter: dim ? 'grayscale(.5)' : 'none',
-      boxShadow: glow ? '0 0 0 4px rgba(255,45,146,.12), 0 18px 40px -12px rgba(255,45,146,.55)' : 'none',
-    }}>
-      {avatarUrl ? (
-        <img src={avatarUrl} alt={name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', display: 'block' }} />
-      ) : (
-        <div style={{
-          width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden',
-          position: 'relative', display: 'grid', placeItems: 'center',
-          background: `repeating-linear-gradient(45deg, ${G.ink2} 0 8px, ${G.ink3} 8px 16px)`,
-        }}>
-          <div style={{ position: 'absolute', inset: 0, background: SEQUIN, opacity: .5 }} />
-          <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
-            <div style={{ fontFamily: 'Bodoni Moda, serif', fontWeight: 700, color: G.cream, fontSize: size * 0.3, lineHeight: 1 }}>{initials}</div>
-            <div style={{ fontFamily: 'ui-monospace, monospace', color: G.muted, fontSize: Math.max(7, size * 0.075), letterSpacing: '.12em', marginTop: size * 0.06 }}>QUEEN</div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Momentum({ n, big = false }: { n: number; big?: boolean }) {
-  const up = n >= 0;
-  return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: big ? 6 : 4,
-      fontFamily: 'Outfit, sans-serif', fontWeight: 800, whiteSpace: 'nowrap',
-      fontSize: big ? 22 : 13, lineHeight: 1,
-      color: up ? G.good : G.bad,
-      background: up ? 'rgba(91,227,155,.12)' : 'rgba(255,93,115,.12)',
-      border: `1px solid ${up ? 'rgba(91,227,155,.4)' : 'rgba(255,93,115,.4)'}`,
-      padding: big ? '7px 12px' : '3px 8px', borderRadius: 999,
-    }}>
-      <span style={{ fontSize: big ? 16 : 11 }}>{up ? '▲' : '▼'}</span>
-      {up ? '+' : ''}{n}
-      <span style={{ opacity: .6, fontWeight: 600, fontSize: big ? 12 : 10 }}>pts</span>
-    </span>
-  );
-}
-
-function PlacePill({ place, small = false }: { place: EpisodeResult['placement'] | null; small?: boolean }) {
-  if (!place) return null;
-  const s = PLACE_STYLE[place];
-  return (
-    <span style={{
-      fontFamily: 'Outfit, sans-serif', fontWeight: 800, letterSpacing: '.08em',
-      fontSize: small ? 10 : 11, color: s.fg, background: s.bg,
-      padding: small ? '2px 7px' : '3px 9px', borderRadius: 999, whiteSpace: 'nowrap',
-    }}>{place}</span>
-  );
-}
-
-function ScorePill({ pts }: { pts: number }) {
-  const color = pts > 0 ? G.good : pts < 0 ? G.bad : G.muted;
-  const bg    = pts > 0 ? 'rgba(91,227,155,.12)' : pts < 0 ? 'rgba(255,93,115,.12)' : 'rgba(169,143,196,.12)';
-  return (
-    <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: 11, color, background: bg, padding: '2px 8px', borderRadius: 999, whiteSpace: 'nowrap' }}>
-      {pts > 0 ? '+' : ''}{pts}
-    </span>
-  );
 }
 
 function MoveArrow({ delta }: { delta: number }) {

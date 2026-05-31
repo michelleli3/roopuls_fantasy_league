@@ -5,32 +5,25 @@ import { supabase } from '../../lib/supabase';
 import { getPlayerByEmail } from '../../api/players';
 import { usePlayerByUserId, useUploadPlayerAvatar } from '../../hooks/usePlayers';
 import { useContestants, useEpisodeResults } from '../../hooks/useContestants';
-import {
-  useSeasonPicks,
-  useEpisodePicks,
-  useUpsertSeasonPick,
-  useAddEpisodePick,
-  useRemoveEpisodePick,
-} from '../../hooks/usePicks';
-import {
-  MAX_WINNER_PICKS,
-  MAX_LOSER_PICKS,
-  REPICK_PENALTY,
-  WINNER_PICK_POINTS,
-  LOSER_PICK_POINTS,
-} from '../../utils/scoring';
-import type { Contestant, EpisodePick, EpisodeResult, SeasonPick } from '../../types';
+import { useSeasonPicks, useEpisodePicks, useUpsertSeasonPick, useAddEpisodePick, useRemoveEpisodePick } from '../../hooks/usePicks';
+import { MAX_WINNER_PICKS, MAX_LOSER_PICKS, REPICK_PENALTY, WINNER_PICK_POINTS, LOSER_PICK_POINTS } from '../../utils/scoring';
+import { G, ACCENT } from '../_glam/tokens';
+import { GlamHead, PlacePill, ScorePill, GlamInput, GlamButton, Card, CardHead } from '../_glam/primitives';
+import type { Contestant, EpisodePick, EpisodeResult, SeasonPick, FantasyPlayer } from '../../types';
 
-const PLACEMENT_STYLES: Record<EpisodeResult['placement'], string> = {
-  WINNER: 'bg-yellow-100 text-yellow-800',
-  WIN:    'bg-purple-100 text-purple-800',
-  HIGH:   'bg-blue-100 text-blue-800',
-  SAFE:   'bg-gray-100 text-gray-500',
-  LOW:    'bg-orange-100 text-orange-700',
-  BTM2:   'bg-red-100 text-red-700',
-  ELIM:   'bg-red-200 text-red-900',
-};
+function useNarrow() {
+  const [narrow, setNarrow] = useState(
+    typeof window !== 'undefined' && window.innerWidth < 680
+  );
+  useEffect(() => {
+    const fn = () => setNarrow(window.innerWidth < 680);
+    window.addEventListener('resize', fn);
+    return () => window.removeEventListener('resize', fn);
+  }, []);
+  return narrow;
+}
 
+// ── Auth gate ─────────────────────────────────────────────────────────────────
 export default function PicksView() {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -46,46 +39,51 @@ export default function PicksView() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-400 text-sm">
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: G.ink, color: G.muted, fontFamily: 'Outfit, sans-serif', fontSize: 14 }}>
         Loading…
       </div>
     );
   }
-
   if (!session) return <PlayerLoginPage />;
-
   return <PicksContent userId={session.user.id} />;
 }
 
+// ── Login page ────────────────────────────────────────────────────────────────
 function PlayerLoginPage() {
   const [tab, setTab] = useState<'signin' | 'signup'>('signin');
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white rounded-2xl shadow-sm border w-full max-w-sm overflow-hidden">
-        <div className="p-8 pb-4 text-center">
-          <h1 className="text-2xl font-bold text-purple-700">Drag Race Fantasy</h1>
-          <p className="text-sm text-gray-400 mt-1">Season 18</p>
+    <div style={{
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+      background: G.ink,
+      backgroundImage: `radial-gradient(90% 60% at 50% -5%, ${G.purple}33, transparent 65%), radial-gradient(70% 50% at 50% 110%, ${G.pink}22, transparent 60%)`,
+      fontFamily: 'Outfit, sans-serif',
+    }}>
+      <div style={{ width: '100%', maxWidth: 380, background: G.ink2, borderRadius: 24, overflow: 'hidden', border: `1px solid ${G.line}`, boxShadow: '0 40px 90px -40px rgba(0,0,0,.8)' }}>
+        {/* Card header */}
+        <div style={{ textAlign: 'center', padding: '34px 28px 18px', background: `radial-gradient(120% 90% at 50% -20%, ${ACCENT.key}22, transparent 60%)` }}>
+          <div style={{ fontSize: 30, marginBottom: 6, filter: `drop-shadow(0 4px 10px ${ACCENT.key}88)` }}>♛</div>
+          <h1 style={{ margin: 0, fontFamily: 'Bodoni Moda, serif', fontWeight: 700, fontSize: 30, lineHeight: 1, color: G.cream }}>
+            Drag Race{' '}
+            <span style={{ background: ACCENT.foil, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Fantasy</span>
+          </h1>
+          <div style={{ fontFamily: 'Pinyon Script, cursive', fontSize: 26, color: G.pinkSoft, lineHeight: 1.1, marginTop: 2 }}>start your engines</div>
         </div>
 
-        {/* Tab switcher */}
-        <div className="flex border-b mx-8">
+        {/* Tabs */}
+        <div style={{ display: 'flex', margin: '0 28px', borderBottom: `1px solid ${G.line}` }}>
           {(['signin', 'signup'] as const).map(t => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`flex-1 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                tab === t
-                  ? 'border-purple-600 text-purple-600'
-                  : 'border-transparent text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              {t === 'signin' ? 'Sign in' : 'Create account'}
-            </button>
+            <button key={t} onClick={() => setTab(t)} style={{
+              all: 'unset' as const, cursor: 'pointer', flex: 1, textAlign: 'center', padding: '12px 0',
+              fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: 13,
+              color: tab === t ? G.cream : G.muted,
+              borderBottom: `2px solid ${tab === t ? ACCENT.key : 'transparent'}`,
+              marginBottom: -1, transition: 'color .18s',
+            }}>{t === 'signin' ? 'Sign in' : 'Create account'}</button>
           ))}
         </div>
 
-        <div className="p-8 pt-6">
+        {/* Forms */}
+        <div style={{ padding: '24px 28px 30px' }}>
           {tab === 'signin' ? <SignInForm /> : <SignUpForm onSuccess={() => setTab('signin')} />}
         </div>
       </div>
@@ -109,31 +107,16 @@ function SignInForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={e => setEmail(e.target.value)}
-        className="w-full border rounded-lg px-3 py-2.5 text-sm"
-        required
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={e => setPassword(e.target.value)}
-        className="w-full border rounded-lg px-3 py-2.5 text-sm"
-        required
-      />
-      {error && <p className="text-red-500 text-sm">{error}</p>}
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-purple-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
-      >
-        {loading ? 'Signing in…' : 'Sign in'}
-      </button>
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <GlamInput type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
+      <GlamInput type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required />
+      {error && <p style={{ fontFamily: 'Outfit, sans-serif', fontSize: 12, color: G.bad, margin: 0 }}>{error}</p>}
+      <GlamButton type="submit" disabled={loading} style={{ marginTop: 4 }}>
+        {loading ? 'One moment…' : 'Sashay in →'}
+      </GlamButton>
+      <p style={{ textAlign: 'center', fontFamily: 'Outfit, sans-serif', fontSize: 11.5, color: G.muted, margin: 0 }}>
+        Only cast members can enter the werk room.
+      </p>
     </form>
   );
 }
@@ -148,85 +131,41 @@ function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
-    setInfo('');
-
-    if (password !== confirm) {
-      setError('Passwords do not match.');
-      return;
-    }
-
+    setError(''); setInfo('');
+    if (password !== confirm) { setError('Passwords do not match.'); return; }
     setLoading(true);
     try {
-      // Check allowlist before creating the account
       const player = await getPlayerByEmail(email.trim().toLowerCase());
-      if (!player) {
-        setError('That email isn\'t on the league roster. Ask the admin to add you.');
-        return;
-      }
-      if (player.user_id) {
-        setError('An account already exists for this email. Sign in instead.');
-        return;
-      }
-
+      if (!player) { setError("Your email isn't on the league roster. Ask the admin to add you."); return; }
+      if (player.user_id) { setError('Account already exists for this email. Sign in instead.'); return; }
       const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
-      if (signUpError) {
-        setError(signUpError.message);
-        return;
-      }
-
-      if (!data.session) {
-        // Email confirmation required — the Postgres trigger will link on confirm
-        setInfo('Check your email to confirm your account, then sign in.');
-        onSuccess();
-      }
-      // If session exists, onAuthStateChange fires and PicksContent renders automatically
+      if (signUpError) { setError(signUpError.message); return; }
+      if (!data.session) { setInfo('Check your email to confirm your account, then sign in.'); onSuccess(); }
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={e => setEmail(e.target.value)}
-        className="w-full border rounded-lg px-3 py-2.5 text-sm"
-        required
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={e => setPassword(e.target.value)}
-        className="w-full border rounded-lg px-3 py-2.5 text-sm"
-        required
-        minLength={6}
-      />
-      <input
-        type="password"
-        placeholder="Confirm password"
-        value={confirm}
-        onChange={e => setConfirm(e.target.value)}
-        className="w-full border rounded-lg px-3 py-2.5 text-sm"
-        required
-      />
-      {error && <p className="text-red-500 text-sm">{error}</p>}
-      {info && <p className="text-green-600 text-sm">{info}</p>}
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-purple-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
-      >
-        {loading ? 'Creating account…' : 'Create account'}
-      </button>
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <GlamInput type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
+      <GlamInput type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
+      <GlamInput type="password" placeholder="Confirm password" value={confirm} onChange={e => setConfirm(e.target.value)} required />
+      {error && <p style={{ fontFamily: 'Outfit, sans-serif', fontSize: 12, color: G.bad, margin: 0 }}>{error}</p>}
+      {info  && <p style={{ fontFamily: 'Outfit, sans-serif', fontSize: 12, color: G.good, margin: 0 }}>{info}</p>}
+      <GlamButton type="submit" disabled={loading} style={{ marginTop: 4 }}>
+        {loading ? 'One moment…' : 'Join the cast →'}
+      </GlamButton>
+      <p style={{ textAlign: 'center', fontFamily: 'Outfit, sans-serif', fontSize: 11.5, color: G.muted, margin: 0 }}>
+        Your email must be on the league roster.
+      </p>
     </form>
   );
 }
 
+// ── Picks content ─────────────────────────────────────────────────────────────
 function PicksContent({ userId }: { userId: string }) {
+  const narrow = useNarrow();
   const { data: player, isLoading: playerLoading } = usePlayerByUserId(userId);
   const { data: contestants = [] } = useContestants();
   const { data: results = [] } = useEpisodeResults();
@@ -239,7 +178,6 @@ function PicksContent({ userId }: { userId: string }) {
   const allEpisodes = Array.from({ length: nextEpisode }, (_, i) => i + 1);
 
   const [selectedEpisode, setSelectedEpisode] = useState<number>(nextEpisode);
-
   useEffect(() => {
     setSelectedEpisode(prev => (prev === maxResultEpisode ? maxResultEpisode + 1 : prev));
   }, [maxResultEpisode]);
@@ -247,63 +185,63 @@ function PicksContent({ userId }: { userId: string }) {
   const seasonPick = player ? seasonPicks.find(s => s.fantasy_player_id === player.id) : undefined;
   const pickedContestant = contestants.find(c => c.id === seasonPick?.contestant_id) ?? null;
   const seasonPickEliminated = pickedContestant != null && !pickedContestant.active;
-
   const isLocked = episodesWithResults.has(selectedEpisode);
   const contestantName = (id: string) => contestants.find(c => c.id === id)?.name ?? '—';
 
-  async function handleLogout() {
-    await supabase.auth.signOut();
-  }
-
   if (playerLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-400 text-sm">
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: G.ink, color: G.muted, fontFamily: 'Outfit, sans-serif', fontSize: 14 }}>
         Loading…
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-5">
-        <div className="max-w-xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {player && <AvatarUpload player={player} />}
-            <div>
-              <h1 className="text-2xl font-bold text-purple-700">Make Your Picks</h1>
-              <p className="text-xs text-gray-400 mt-0.5">
-                {player ? `Signed in as ${player.name}` : 'Drag Race Fantasy League · Season 18'}
-              </p>
+    <div style={{ minHeight: '100vh', background: G.ink, color: G.cream, fontFamily: 'Outfit, sans-serif', backgroundImage: `radial-gradient(80% 50% at 50% 0%, ${G.purple}22, transparent 70%)` }}>
+      {/* Header */}
+      <div style={{ position: 'relative', overflow: 'hidden', borderBottom: `1px solid ${G.line}`, background: `radial-gradient(110% 100% at 50% -30%, ${ACCENT.key}1f, transparent 60%)` }}>
+        <div style={{ maxWidth: 620, margin: '0 auto', padding: narrow ? '20px 18px' : '24px 26px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+            {player && <GlamAvatarUpload player={player} narrow={narrow} />}
+            <div style={{ minWidth: 0 }}>
+              <h1 style={{ margin: 0, fontFamily: 'Bodoni Moda, serif', fontWeight: 700, fontSize: narrow ? 26 : 32, lineHeight: 1, color: G.cream }}>
+                Make Your{' '}
+                <span style={{ background: ACCENT.foil, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Picks</span>
+              </h1>
+              {player && (
+                <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 12, color: G.muted, marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  serving as <span style={{ color: G.pinkSoft, fontWeight: 700 }}>{player.name}</span>
+                </div>
+              )}
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Link to="/" className="text-sm font-medium text-purple-600 hover:underline">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+            <Link to="/" style={{ fontFamily: 'Outfit, sans-serif', fontSize: 12, fontWeight: 700, letterSpacing: '.03em', color: G.cream, background: `${ACCENT.key}22`, border: `1px solid ${ACCENT.key}44`, padding: '8px 14px', borderRadius: 999, textDecoration: 'none', whiteSpace: 'nowrap' }}>
               ← Standings
             </Link>
-            <button
-              onClick={handleLogout}
-              className="text-xs text-gray-400 hover:text-gray-600 border rounded-lg px-3 py-1.5"
-            >
-              Sign out
-            </button>
+            {!narrow && (
+              <button onClick={() => supabase.auth.signOut()} style={{ all: 'unset' as const, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', fontSize: 12, fontWeight: 600, color: G.muted, border: `1px solid ${G.line}`, padding: '8px 12px', borderRadius: 999, whiteSpace: 'nowrap' }}>
+                Sign out
+              </button>
+            )}
           </div>
         </div>
-      </header>
+      </div>
 
-      <main className="max-w-xl mx-auto px-4 py-8 space-y-5">
+      {/* Main */}
+      <div style={{ maxWidth: 620, margin: '0 auto', padding: narrow ? '18px 16px 40px' : '24px 26px 48px', display: 'flex', flexDirection: 'column', gap: 16 }}>
         {!player ? (
-          <div className="bg-white rounded-2xl border p-8 text-center space-y-2">
-            <p className="font-semibold text-gray-700">Account not linked</p>
-            <p className="text-sm text-gray-400">
-              Your login isn't linked to a player yet. Ask the league admin to link your account.
-            </p>
-            <button
-              onClick={handleLogout}
-              className="mt-4 text-sm text-purple-600 hover:underline"
-            >
-              Sign out
-            </button>
-          </div>
+          <Card>
+            <div style={{ padding: '32px 24px', textAlign: 'center' }}>
+              <div style={{ fontFamily: 'Bodoni Moda, serif', fontWeight: 700, fontSize: 20, color: G.cream, marginBottom: 8 }}>Account not linked</div>
+              <p style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, color: G.muted, margin: '0 0 20px' }}>
+                Your login isn't linked to a player yet. Ask the league admin to link your account.
+              </p>
+              <button onClick={() => supabase.auth.signOut()} style={{ all: 'unset' as const, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', fontSize: 12, color: G.pinkSoft, borderBottom: `1px solid ${G.pinkSoft}44` }}>
+                Sign out
+              </button>
+            </div>
+          </Card>
         ) : (
           <>
             <SeasonPickCard
@@ -314,117 +252,87 @@ function PicksContent({ userId }: { userId: string }) {
               contestants={contestants}
             />
 
-            <div className="bg-white rounded-2xl border p-5 space-y-4">
-              <p className="font-semibold text-gray-800">Episode Picks</p>
-
-              <div className="flex gap-1.5 flex-wrap">
-                {allEpisodes.map(ep => {
-                  const locked = episodesWithResults.has(ep);
-                  const isUpcoming = ep === nextEpisode;
-                  const isSelected = selectedEpisode === ep;
-                  return (
-                    <button
-                      key={ep}
-                      onClick={() => setSelectedEpisode(ep)}
-                      className={`relative px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
-                        isSelected
-                          ? 'bg-purple-600 text-white border-purple-600'
-                          : locked
-                          ? 'bg-gray-50 text-gray-400 border-gray-200 hover:border-gray-300'
-                          : 'bg-white text-gray-600 border-gray-300 hover:border-purple-400'
-                      }`}
-                    >
-                      {isUpcoming && (
-                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full ring-2 ring-white" />
-                      )}
-                      Ep {ep}
-                    </button>
-                  );
-                })}
+            <Card>
+              <CardHead right={
+                <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 11, color: isLocked ? G.muted : G.good }}>
+                  {isLocked ? 'locked' : '● open'}
+                </span>
+              }>Episode Picks</CardHead>
+              <div style={{ padding: '14px 20px 22px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <EpisodeTabs
+                  allEpisodes={allEpisodes}
+                  episodesWithResults={episodesWithResults}
+                  nextEpisode={nextEpisode}
+                  selected={selectedEpisode}
+                  onSelect={setSelectedEpisode}
+                />
+                {isLocked ? (
+                  <LockedEpisodeSummary
+                    playerId={player.id}
+                    episode={selectedEpisode}
+                    episodePicks={episodePicks}
+                    results={results}
+                    contestants={contestants}
+                    narrow={narrow}
+                  />
+                ) : (
+                  <EpisodePicksEditor
+                    playerId={player.id}
+                    episode={selectedEpisode}
+                    episodePicks={episodePicks}
+                    contestants={contestants}
+                    narrow={narrow}
+                  />
+                )}
               </div>
-
-              {isLocked ? (
-                <LockedEpisodeSummary
-                  playerId={player.id}
-                  episode={selectedEpisode}
-                  episodePicks={episodePicks}
-                  results={results}
-                  contestantName={contestantName}
-                />
-              ) : (
-                <EpisodePicksEditor
-                  playerId={player.id}
-                  episode={selectedEpisode}
-                  episodePicks={episodePicks}
-                  contestants={contestants}
-                />
-              )}
-            </div>
+            </Card>
           </>
         )}
-      </main>
+      </div>
     </div>
   );
 }
 
-function AvatarUpload({ player }: { player: import('../../types').FantasyPlayer }) {
+// ── Avatar upload ─────────────────────────────────────────────────────────────
+function GlamAvatarUpload({ player, narrow }: { player: FantasyPlayer; narrow: boolean }) {
   const upload = useUploadPlayerAvatar();
   const [uploading, setUploading] = useState(false);
+  const [hover, setHover] = useState(false);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    try {
-      await upload.mutateAsync({ playerId: player.id, file });
-    } finally {
-      setUploading(false);
-      e.target.value = '';
-    }
+    try { await upload.mutateAsync({ playerId: player.id, file }); }
+    finally { setUploading(false); e.target.value = ''; }
   }
 
   return (
-    <label className="relative cursor-pointer group flex-shrink-0">
-      <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-purple-200 bg-gray-100 flex items-center justify-center">
-        {player.avatar_url ? (
-          <img src={player.avatar_url} alt={player.name} className="w-full h-full object-cover" />
-        ) : (
-          <span className="text-gray-400 text-xl font-bold font-serif">{player.name[0]}</span>
-        )}
-      </div>
-      {uploading ? (
-        <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
-          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : (
-        <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <span className="text-white text-xs font-semibold">Edit</span>
-        </div>
-      )}
-      <input type="file" accept="image/*" className="hidden" onChange={handleFile} disabled={uploading} />
+    <label style={{ position: 'relative', cursor: 'pointer', display: 'block', flexShrink: 0 }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
+      <GlamHead size={narrow ? 52 : 60} ring={ACCENT.key} name={player.name} avatarUrl={player.avatar_url ?? null} mono="YOU" />
+      <div style={{
+        position: 'absolute', inset: 0, borderRadius: '50%', display: 'grid', placeItems: 'center',
+        background: 'rgba(0,0,0,.45)', opacity: hover || uploading ? 1 : 0, transition: 'opacity .2s',
+        fontFamily: 'Outfit, sans-serif', fontSize: 10, fontWeight: 700, color: '#fff',
+        pointerEvents: 'none',
+      }}>{uploading ? '…' : 'EDIT'}</div>
+      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} disabled={uploading} />
     </label>
   );
 }
 
-function SeasonPickCard({
-  playerId,
-  seasonPick,
-  pickedContestant,
-  eliminated,
-  contestants,
-}: {
-  playerId: string;
-  seasonPick: SeasonPick | undefined;
-  pickedContestant: Contestant | null;
-  eliminated: boolean;
-  contestants: Contestant[];
+// ── Season pick card ──────────────────────────────────────────────────────────
+function SeasonPickCard({ playerId, seasonPick, pickedContestant, eliminated, contestants }: {
+  playerId: string; seasonPick: SeasonPick | undefined;
+  pickedContestant: Contestant | null; eliminated: boolean; contestants: Contestant[];
 }) {
   const upsert = useUpsertSeasonPick();
   const [isEditing, setIsEditing] = useState(false);
   const [selected, setSelected] = useState('');
 
   const needsPick = !seasonPick || eliminated;
-  const showForm = needsPick || isEditing;
+  const showPicker = needsPick || isEditing;
   const activeContestants = contestants.filter(c => c.active);
 
   async function handleSave() {
@@ -433,287 +341,247 @@ function SeasonPickCard({
     await upsert.mutateAsync({
       fantasy_player_id: playerId,
       contestant_id: selected,
-      repick_count: isRepick
-        ? seasonPick!.repick_count + 1
-        : (seasonPick?.repick_count ?? 0),
+      repick_count: isRepick ? seasonPick!.repick_count + 1 : (seasonPick?.repick_count ?? 0),
     });
     setIsEditing(false);
     setSelected('');
   }
 
   return (
-    <div className={`bg-white rounded-2xl border p-5 space-y-3 ${eliminated ? 'border-red-200' : ''}`}>
-      <div className="flex items-center justify-between">
-        <p className="font-semibold text-gray-800">Season Pick</p>
-        {seasonPick && seasonPick.repick_count > 0 && (
-          <span className="text-xs text-red-500 font-medium">
-            {seasonPick.repick_count} re-pick{seasonPick.repick_count > 1 ? 's' : ''} &middot; {seasonPick.repick_count * Math.abs(REPICK_PENALTY)} pts penalty
-          </span>
-        )}
-      </div>
+    <Card danger={eliminated}>
+      <CardHead right={seasonPick && seasonPick.repick_count > 0 ? (
+        <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: 11, color: G.bad }}>
+          {seasonPick.repick_count} re-{seasonPick.repick_count > 1 ? 'snatches' : 'snatch'} · {seasonPick.repick_count * Math.abs(REPICK_PENALTY)} pts
+        </span>
+      ) : undefined}>Season Queen</CardHead>
 
-      {eliminated && pickedContestant && (
-        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
-          <strong>{pickedContestant.name}</strong> was eliminated — you must pick a new season winner.
-          <span className="block text-xs text-red-400 mt-0.5">Each re-pick costs {Math.abs(REPICK_PENALTY)} pts.</span>
-        </div>
-      )}
-
-      {!seasonPick && (
-        <div className="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 text-sm text-purple-700">
-          You haven't picked a season winner yet. Pick who you think will win it all!
-        </div>
-      )}
-
-      {seasonPick && !eliminated && pickedContestant && (
-        <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border text-sm">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-gray-800">{pickedContestant.name}</span>
-            <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">Active</span>
+      <div style={{ padding: '14px 20px 20px' }}>
+        {eliminated && pickedContestant ? (
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', background: 'rgba(255,93,115,.10)', border: '1px solid rgba(255,93,115,.3)', borderRadius: 14, padding: '12px 16px', marginBottom: 14 }}>
+            <GlamHead size={44} ring={G.bad} name={pickedContestant.name} dim mono="OUT" />
+            <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, color: '#ffd0d6' }}>
+              <strong style={{ color: G.cream }}>{pickedContestant.name}</strong> got the chop — crown a new winner.
+              <span style={{ display: 'block', fontSize: 11, color: G.bad, marginTop: 2 }}>each re-snatch costs {Math.abs(REPICK_PENALTY)} pts.</span>
+            </div>
           </div>
-          {!isEditing && (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="text-xs text-gray-400 hover:text-purple-600 transition-colors"
-            >
-              Change ({Math.abs(REPICK_PENALTY)} pt penalty)
-            </button>
-          )}
-        </div>
-      )}
-
-      {showForm && (
-        <>
-          {isEditing && selected && selected !== seasonPick?.contestant_id && (
-            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              Changing your pick will add a {Math.abs(REPICK_PENALTY)}-point penalty.
-            </p>
-          )}
-          <div className="flex gap-2">
-            <select
-              value={selected}
-              onChange={e => setSelected(e.target.value)}
-              className="border rounded-lg px-3 py-2 text-sm flex-1 bg-white"
-            >
-              <option value="">Select season winner…</option>
-              {activeContestants.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-            <button
-              onClick={handleSave}
-              disabled={!selected || upsert.isPending}
-              className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 whitespace-nowrap"
-            >
-              {upsert.isPending ? 'Saving…' : needsPick ? 'Set Pick' : 'Confirm'}
-            </button>
-            {isEditing && (
-              <button
-                onClick={() => { setIsEditing(false); setSelected(''); }}
-                className="text-sm text-gray-400 hover:text-gray-600 px-2"
-              >
-                Cancel
+        ) : seasonPick && pickedContestant ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, background: 'rgba(0,0,0,.2)', border: `1px solid ${G.line}`, borderRadius: 14, padding: '12px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+              <GlamHead size={48} ring={G.purple} name={pickedContestant.name} mono="QUEEN" />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontFamily: 'Bodoni Moda, serif', fontWeight: 700, color: G.cream, fontSize: 17 }}>{pickedContestant.name}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: G.good, flexShrink: 0 }} />
+                  <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 12, color: G.good, fontWeight: 700 }}>still in the running</span>
+                </div>
+              </div>
+            </div>
+            {!isEditing && (
+              <button onClick={() => setIsEditing(true)} style={{ all: 'unset' as const, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', fontSize: 11.5, color: G.muted, whiteSpace: 'nowrap' }}>
+                change (−{Math.abs(REPICK_PENALTY)} pts)
               </button>
             )}
           </div>
-        </>
-      )}
+        ) : (
+          <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, color: G.muted, marginBottom: 12 }}>
+            You haven't crowned your queen yet. Pick who you think will win it all!
+          </div>
+        )}
+
+        {showPicker && (
+          <div style={{ marginTop: 14 }}>
+            {isEditing && selected && (
+              <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 11.5, color: G.gold, background: 'rgba(255,210,63,.1)', border: '1px solid rgba(255,210,63,.3)', borderRadius: 10, padding: '8px 12px', marginBottom: 10 }}>
+                Switching adds a {Math.abs(REPICK_PENALTY)}-point penalty.
+              </div>
+            )}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
+              {activeContestants.map(c => {
+                const on = selected === c.id;
+                return (
+                  <button key={c.id} onClick={() => setSelected(c.id)} style={{
+                    all: 'unset' as const, cursor: 'pointer', boxSizing: 'border-box',
+                    display: 'flex', alignItems: 'center', gap: 9, padding: '8px 10px', borderRadius: 12,
+                    background: on ? `${ACCENT.key}1f` : 'rgba(0,0,0,.2)',
+                    border: `1px solid ${on ? ACCENT.key : G.line}`, transition: 'border-color .15s, background .15s',
+                  }}>
+                    <GlamHead size={32} ring={on ? ACCENT.key : G.purple} name={c.name} mono="" />
+                    <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 12.5, fontWeight: on ? 700 : 500, color: on ? G.cream : G.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 12, alignItems: 'center' }}>
+              <GlamButton disabled={!selected || upsert.isPending} onClick={handleSave} style={{ width: 'auto', padding: '10px 24px' }}>
+                {upsert.isPending ? 'Saving…' : needsPick ? 'Crown her' : 'Confirm switch'}
+              </GlamButton>
+              {isEditing && (
+                <button onClick={() => { setIsEditing(false); setSelected(''); }} style={{ all: 'unset' as const, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', fontSize: 12, color: G.muted }}>
+                  cancel
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+// ── Episode tabs ──────────────────────────────────────────────────────────────
+function EpisodeTabs({ allEpisodes, episodesWithResults, nextEpisode, selected, onSelect }: {
+  allEpisodes: number[]; episodesWithResults: Set<number>;
+  nextEpisode: number; selected: number; onSelect: (ep: number) => void;
+}) {
+  return (
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      {allEpisodes.map(ep => {
+        const locked = episodesWithResults.has(ep);
+        const isUpcoming = ep === nextEpisode;
+        const on = selected === ep;
+        return (
+          <button key={ep} onClick={() => onSelect(ep)} style={{
+            all: 'unset' as const, cursor: 'pointer', position: 'relative', boxSizing: 'border-box',
+            fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: 12.5, padding: '7px 14px',
+            borderRadius: 999, whiteSpace: 'nowrap',
+            color: on ? '#2a0e1c' : locked ? G.muted : G.cream,
+            background: on ? ACCENT.foil : 'rgba(0,0,0,.2)',
+            border: `1px solid ${on ? 'transparent' : locked ? G.line : ACCENT.key + '55'}`,
+            opacity: locked && !on ? .7 : 1,
+          }}>
+            {isUpcoming && (
+              <span style={{ position: 'absolute', top: -2, right: -2, width: 9, height: 9, borderRadius: '50%', background: G.good, boxShadow: `0 0 8px ${G.good}`, border: `2px solid ${G.ink2}` }} />
+            )}
+            Ep {ep}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-function EpisodePicksEditor({
-  playerId,
-  episode,
-  episodePicks,
-  contestants,
-}: {
-  playerId: string;
-  episode: number;
-  episodePicks: EpisodePick[];
-  contestants: Contestant[];
+// ── Episode picks editor ──────────────────────────────────────────────────────
+function EpisodePicksEditor({ playerId, episode, episodePicks, contestants, narrow }: {
+  playerId: string; episode: number; episodePicks: EpisodePick[];
+  contestants: Contestant[]; narrow: boolean;
 }) {
   const addPick = useAddEpisodePick();
   const removePick = useRemoveEpisodePick();
-
-  const myPicks = episodePicks.filter(
-    p => p.fantasy_player_id === playerId && p.episode_number === episode
-  );
-  const winnerPicks = myPicks.filter(p => p.pick_type === 'winner');
-  const loserPicks  = myPicks.filter(p => p.pick_type === 'loser');
-  const activeContestants = contestants.filter(c => c.active);
+  const myPicks = episodePicks.filter(p => p.fantasy_player_id === playerId && p.episode_number === episode);
+  const winnerIds = myPicks.filter(p => p.pick_type === 'winner').map(p => p.contestant_id);
+  const loserIds  = myPicks.filter(p => p.pick_type === 'loser').map(p => p.contestant_id);
 
   async function toggle(contestantId: string, type: 'winner' | 'loser') {
-    const existing = myPicks.find(
-      p => p.contestant_id === contestantId && p.pick_type === type
-    );
-    if (existing) {
-      await removePick.mutateAsync(existing.id);
-      return;
-    }
-    const sameType = type === 'winner' ? winnerPicks : loserPicks;
+    const existing = myPicks.find(p => p.contestant_id === contestantId && p.pick_type === type);
+    if (existing) { await removePick.mutateAsync(existing.id); return; }
+    const sameType = type === 'winner' ? winnerIds : loserIds;
     if (sameType.length >= (type === 'winner' ? MAX_WINNER_PICKS : MAX_LOSER_PICKS)) return;
-    await addPick.mutateAsync({
-      fantasy_player_id: playerId,
-      contestant_id: contestantId,
-      episode_number: episode,
-      pick_type: type,
-    });
+    await addPick.mutateAsync({ fantasy_player_id: playerId, contestant_id: contestantId, episode_number: episode, pick_type: type });
   }
 
-  if (activeContestants.length === 0) {
-    return <p className="text-sm text-gray-400 italic py-2">No active contestants to pick from.</p>;
-  }
+  const active = contestants.filter(c => c.active);
+  if (active.length === 0) return <p style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, color: G.muted, fontStyle: 'italic' }}>No active contestants to pick from.</p>;
 
   return (
-    <div className="space-y-3">
-      <p className="text-xs text-gray-500">
-        Pick up to {MAX_WINNER_PICKS} winners and {MAX_LOSER_PICKS} losers for Episode {episode}.
-      </p>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-            Winners ({winnerPicks.length}/{MAX_WINNER_PICKS})
-          </p>
-          <div className="border rounded-lg overflow-hidden">
-            {activeContestants.map(c => {
-              const picked = winnerPicks.some(p => p.contestant_id === c.id);
-              const conflict = loserPicks.some(p => p.contestant_id === c.id);
-              const full = !picked && winnerPicks.length >= MAX_WINNER_PICKS;
-              return (
-                <label
-                  key={c.id}
-                  className={`flex items-center gap-3 px-3 py-2.5 border-b last:border-b-0 text-sm transition-colors ${
-                    picked ? 'bg-purple-50' : 'bg-white'
-                  } ${conflict || full ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={picked}
-                    disabled={conflict || full}
-                    onChange={() => toggle(c.id, 'winner')}
-                    className="accent-purple-600"
-                  />
-                  {c.name}
-                </label>
-              );
-            })}
-          </div>
-        </div>
-
-        <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-            Losers ({loserPicks.length}/{MAX_LOSER_PICKS})
-          </p>
-          <div className="border rounded-lg overflow-hidden">
-            {activeContestants.map(c => {
-              const picked = loserPicks.some(p => p.contestant_id === c.id);
-              const conflict = winnerPicks.some(p => p.contestant_id === c.id);
-              const full = !picked && loserPicks.length >= MAX_LOSER_PICKS;
-              return (
-                <label
-                  key={c.id}
-                  className={`flex items-center gap-3 px-3 py-2.5 border-b last:border-b-0 text-sm transition-colors ${
-                    picked ? 'bg-red-50' : 'bg-white'
-                  } ${conflict || full ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={picked}
-                    disabled={conflict || full}
-                    onChange={() => toggle(c.id, 'loser')}
-                    className="accent-red-500"
-                  />
-                  {c.name}
-                </label>
-              );
-            })}
-          </div>
-        </div>
+    <div>
+      <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 12, color: G.muted, marginBottom: 12 }}>
+        Tap up to <strong style={{ color: G.gold }}>{MAX_WINNER_PICKS}</strong> to slay and <strong style={{ color: G.pinkSoft }}>{MAX_LOSER_PICKS}</strong> to flop for Episode {episode}. Picks lock when results drop.
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: narrow ? '1fr' : '1fr 1fr', gap: narrow ? 18 : 20 }}>
+        <PickColumnEditor kind="winner" label="Picked to slay" pickedIds={winnerIds} otherIds={loserIds} cap={MAX_WINNER_PICKS} contestants={active} onToggle={id => toggle(id, 'winner')} />
+        <PickColumnEditor kind="loser"  label="Picked to flop" pickedIds={loserIds}  otherIds={winnerIds} cap={MAX_LOSER_PICKS}  contestants={active} onToggle={id => toggle(id, 'loser')} />
       </div>
     </div>
   );
 }
 
-function LockedEpisodeSummary({
-  playerId,
-  episode,
-  episodePicks,
-  results,
-  contestantName,
-}: {
-  playerId: string;
-  episode: number;
-  episodePicks: EpisodePick[];
-  results: EpisodeResult[];
-  contestantName: (id: string) => string;
+function PickColumnEditor({ kind, label, pickedIds, otherIds, cap, contestants, onToggle }: {
+  kind: 'winner' | 'loser'; label: string; pickedIds: string[]; otherIds: string[];
+  cap: number; contestants: Contestant[]; onToggle: (id: string) => void;
 }) {
-  const myPicks = episodePicks.filter(
-    p => p.fantasy_player_id === playerId && p.episode_number === episode
+  const tint  = kind === 'winner' ? ACCENT.key : G.bad;
+  const tintBg = kind === 'winner' ? `${ACCENT.key}1c` : 'rgba(255,93,115,.12)';
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: 12, color: kind === 'winner' ? G.gold : G.pinkSoft }}>{label}</span>
+        <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 11, color: G.muted }}>{pickedIds.length}/{cap}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+        {contestants.map(c => {
+          const on = pickedIds.includes(c.id);
+          const conflict = otherIds.includes(c.id);
+          const full = !on && pickedIds.length >= cap;
+          const disabled = conflict || full;
+          return (
+            <button key={c.id} disabled={disabled} onClick={() => onToggle(c.id)} style={{
+              all: 'unset' as const, cursor: disabled ? 'not-allowed' : 'pointer', boxSizing: 'border-box',
+              display: 'flex', alignItems: 'center', gap: 10, padding: '8px 11px', borderRadius: 12,
+              background: on ? tintBg : 'rgba(0,0,0,.2)',
+              border: `1px solid ${on ? tint : G.line}`,
+              opacity: disabled ? .38 : 1, transition: 'border-color .15s, background .15s',
+            }}>
+              <GlamHead size={30} ring={on ? tint : G.purple} name={c.name} mono="" />
+              <span style={{ flex: 1, fontFamily: 'Outfit, sans-serif', fontSize: 13, fontWeight: on ? 700 : 500, color: on ? G.cream : G.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+              <span style={{ width: 18, height: 18, flexShrink: 0, borderRadius: '50%', display: 'grid', placeItems: 'center', border: `1.5px solid ${on ? tint : G.line}`, background: on ? tint : 'transparent', color: '#2a0e1c', fontSize: 11, fontWeight: 900 }}>
+                {on ? (kind === 'winner' ? '♛' : '▾') : ''}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
+}
+
+// ── Locked episode summary ────────────────────────────────────────────────────
+function LockedEpisodeSummary({ playerId, episode, episodePicks, results, contestants, narrow }: {
+  playerId: string; episode: number; episodePicks: EpisodePick[];
+  results: EpisodeResult[]; contestants: Contestant[]; narrow: boolean;
+}) {
+  const myPicks = episodePicks.filter(p => p.fantasy_player_id === playerId && p.episode_number === episode);
   const winnerPicks = myPicks.filter(p => p.pick_type === 'winner');
   const loserPicks  = myPicks.filter(p => p.pick_type === 'loser');
+  const contestantName = (id: string) => contestants.find(c => c.id === id)?.name ?? '—';
 
   if (myPicks.length === 0) {
-    return (
-      <p className="text-sm text-gray-400 italic py-2">No picks were submitted for this episode.</p>
-    );
+    return <p style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, color: G.muted, fontStyle: 'italic', padding: '4px 0' }}>No picks were submitted for this episode.</p>;
   }
 
   return (
-    <div className="space-y-3">
-      <p className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2 border">
-        Results are in — picks are locked for Episode {episode}.
-      </p>
-      <div className="grid grid-cols-2 gap-4">
-        <LockedPickGroup label="Winners" picks={winnerPicks} results={results} episode={episode} contestantName={contestantName} type="winner" />
-        <LockedPickGroup label="Losers"  picks={loserPicks}  results={results} episode={episode} contestantName={contestantName} type="loser" />
+    <div>
+      <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 11.5, color: G.muted, background: 'rgba(0,0,0,.2)', border: `1px solid ${G.line}`, borderRadius: 10, padding: '8px 12px', marginBottom: 12 }}>
+        The results are in — picks are locked for Episode {episode}.
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: narrow ? '1fr' : '1fr 1fr', gap: narrow ? 16 : 20 }}>
+        <LockedPickGroup label="Picked to slay" picks={winnerPicks} results={results} episode={episode} contestantName={contestantName} type="winner" />
+        <LockedPickGroup label="Picked to flop" picks={loserPicks}  results={results} episode={episode} contestantName={contestantName} type="loser" />
       </div>
     </div>
   );
 }
 
-function LockedPickGroup({
-  label, picks, results, episode, contestantName, type,
-}: {
-  label: string;
-  picks: EpisodePick[];
-  results: EpisodeResult[];
-  episode: number;
-  contestantName: (id: string) => string;
-  type: 'winner' | 'loser';
+function LockedPickGroup({ label, picks, results, episode, contestantName, type }: {
+  label: string; picks: EpisodePick[]; results: EpisodeResult[];
+  episode: number; contestantName: (id: string) => string; type: 'winner' | 'loser';
 }) {
   return (
     <div>
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{label}</p>
+      <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: 12, color: type === 'winner' ? G.gold : G.pinkSoft, marginBottom: 8 }}>{label}</div>
       {picks.length === 0 ? (
-        <p className="text-xs text-gray-300 italic">None</p>
+        <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 12, color: G.muted, fontStyle: 'italic' }}>—</div>
       ) : (
-        <div className="space-y-2">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
           {picks.map(pick => {
-            const result = results.find(
-              r => r.contestant_id === pick.contestant_id && r.episode_number === episode
-            );
-            const pts = result
-              ? (type === 'winner' ? WINNER_PICK_POINTS[result.placement] : LOSER_PICK_POINTS[result.placement])
-              : null;
+            const result = results.find(r => r.contestant_id === pick.contestant_id && r.episode_number === episode);
+            const pts = result ? (type === 'winner' ? WINNER_PICK_POINTS[result.placement] : LOSER_PICK_POINTS[result.placement]) : 0;
             return (
-              <div key={pick.id} className="flex items-center justify-between gap-2 text-sm">
-                <span className="text-gray-700 truncate">{contestantName(pick.contestant_id)}</span>
-                <div className="flex items-center gap-1 shrink-0">
-                  {result && (
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${PLACEMENT_STYLES[result.placement]}`}>
-                      {result.placement}
-                    </span>
-                  )}
-                  {pts !== null && (
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                      pts > 0 ? 'bg-purple-100 text-purple-700' :
-                      pts < 0 ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-400'
-                    }`}>
-                      {pts > 0 ? '+' : ''}{pts}
-                    </span>
-                  )}
+              <div key={pick.id} style={{ display: 'flex', alignItems: 'center', gap: 9, background: 'rgba(0,0,0,.2)', border: `1px solid ${G.line}`, borderRadius: 12, padding: '8px 11px' }}>
+                <GlamHead size={28} ring={G.purple} name={contestantName(pick.contestant_id)} mono="" />
+                <span style={{ flex: 1, fontFamily: 'Outfit, sans-serif', fontSize: 13, color: G.cream, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{contestantName(pick.contestant_id)}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                  <PlacePill place={result?.placement ?? null} small />
+                  <ScorePill pts={pts} />
                 </div>
               </div>
             );
