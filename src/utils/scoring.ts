@@ -74,6 +74,28 @@ export function scoreEpisodePicks(
   return total;
 }
 
+export function scoreOneEpisode(
+  fantasyPlayerId: string,
+  episode: number,
+  episodePicks: EpisodePick[],
+  results: EpisodeResult[]
+): number {
+  const picks = episodePicks.filter(
+    p => p.fantasy_player_id === fantasyPlayerId && p.episode_number === episode
+  );
+  let total = 0;
+  for (const pick of picks) {
+    const result = results.find(
+      r => r.contestant_id === pick.contestant_id && r.episode_number === episode
+    );
+    if (!result) continue;
+    total += pick.pick_type === 'winner'
+      ? WINNER_PICK_POINTS[result.placement]
+      : LOSER_PICK_POINTS[result.placement];
+  }
+  return total;
+}
+
 export function calculatePlayerTotal(
   fantasyPlayerId: string,
   seasonPick: SeasonPick | undefined,
