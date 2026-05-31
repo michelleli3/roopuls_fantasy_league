@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { getPlayerByEmail } from '../../api/players';
-import { usePlayerByUserId } from '../../hooks/usePlayers';
+import { usePlayerByUserId, useUploadPlayerAvatar } from '../../hooks/usePlayers';
 import { useContestants, useEpisodeResults } from '../../hooks/useContestants';
 import {
   useSeasonPicks,
@@ -267,11 +267,14 @@ function PicksContent({ userId }: { userId: string }) {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b px-6 py-5">
         <div className="max-w-xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-purple-700">Make Your Picks</h1>
-            <p className="text-xs text-gray-400 mt-0.5">
-              {player ? `Signed in as ${player.name}` : 'Drag Race Fantasy League · Season 18'}
-            </p>
+          <div className="flex items-center gap-3">
+            {player && <AvatarUpload player={player} />}
+            <div>
+              <h1 className="text-2xl font-bold text-purple-700">Make Your Picks</h1>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {player ? `Signed in as ${player.name}` : 'Drag Race Fantasy League · Season 18'}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <Link to="/" className="text-sm font-medium text-purple-600 hover:underline">
@@ -361,6 +364,45 @@ function PicksContent({ userId }: { userId: string }) {
         )}
       </main>
     </div>
+  );
+}
+
+function AvatarUpload({ player }: { player: import('../../types').FantasyPlayer }) {
+  const upload = useUploadPlayerAvatar();
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      await upload.mutateAsync({ playerId: player.id, file });
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  }
+
+  return (
+    <label className="relative cursor-pointer group flex-shrink-0">
+      <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-purple-200 bg-gray-100 flex items-center justify-center">
+        {player.avatar_url ? (
+          <img src={player.avatar_url} alt={player.name} className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-gray-400 text-xl font-bold font-serif">{player.name[0]}</span>
+        )}
+      </div>
+      {uploading ? (
+        <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
+          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <span className="text-white text-xs font-semibold">Edit</span>
+        </div>
+      )}
+      <input type="file" accept="image/*" className="hidden" onChange={handleFile} disabled={uploading} />
+    </label>
   );
 }
 

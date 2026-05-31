@@ -19,6 +19,7 @@ export interface FantasyPlayer {
   name: string;
   email: string | null;
   user_id: string | null;
+  avatar_url: string | null;
   created_at: string;
 }
 

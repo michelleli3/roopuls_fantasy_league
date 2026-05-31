@@ -5,6 +5,7 @@ import {
   getPlayerByEmail,
   addPlayer,
   updatePlayer,
+  uploadPlayerAvatar,
   getFantasyTeams,
   assignContestant,
   removeContestantFromTeam,
@@ -48,6 +49,18 @@ export function useUpdatePlayer() {
     mutationFn: ({ id, updates }: { id: string; updates: Parameters<typeof updatePlayer>[1] }) =>
       updatePlayer(id, updates),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['fantasy_players'] }),
+  });
+}
+
+export function useUploadPlayerAvatar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ playerId, file }: { playerId: string; file: File }) =>
+      uploadPlayerAvatar(playerId, file),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['fantasy_players'] });
+      qc.invalidateQueries({ queryKey: ['player_by_user_id'] });
+    },
   });
 }
 

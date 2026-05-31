@@ -58,6 +58,7 @@ interface PlayerRow {
   queenPlace: EpisodeResult['placement'] | null;
   repicks: number;
   seasonPts: number;
+  avatarUrl: string | null;
 }
 
 interface PickResult {
@@ -87,8 +88,8 @@ function useNarrow() {
 }
 
 // ── Primitives ────────────────────────────────────────────────────────────────
-function GlamHead({ size = 96, ring = G.gold, name = '', glow = false, dim = false }: {
-  size?: number; ring?: string; name?: string; glow?: boolean; dim?: boolean;
+function GlamHead({ size = 96, ring = G.gold, name = '', glow = false, dim = false, avatarUrl = null }: {
+  size?: number; ring?: string; name?: string; glow?: boolean; dim?: boolean; avatarUrl?: string | null;
 }) {
   const initials = name.split(' ').map(w => w[0]).slice(0, 2).join('');
   return (
@@ -98,17 +99,21 @@ function GlamHead({ size = 96, ring = G.gold, name = '', glow = false, dim = fal
       filter: dim ? 'grayscale(.5)' : 'none',
       boxShadow: glow ? '0 0 0 4px rgba(255,45,146,.12), 0 18px 40px -12px rgba(255,45,146,.55)' : 'none',
     }}>
-      <div style={{
-        width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden',
-        position: 'relative', display: 'grid', placeItems: 'center',
-        background: `repeating-linear-gradient(45deg, ${G.ink2} 0 8px, ${G.ink3} 8px 16px)`,
-      }}>
-        <div style={{ position: 'absolute', inset: 0, background: SEQUIN, opacity: .5 }} />
-        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
-          <div style={{ fontFamily: 'Bodoni Moda, serif', fontWeight: 700, color: G.cream, fontSize: size * 0.3, lineHeight: 1 }}>{initials}</div>
-          <div style={{ fontFamily: 'ui-monospace, monospace', color: G.muted, fontSize: Math.max(7, size * 0.075), letterSpacing: '.12em', marginTop: size * 0.06 }}>QUEEN</div>
+      {avatarUrl ? (
+        <img src={avatarUrl} alt={name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', display: 'block' }} />
+      ) : (
+        <div style={{
+          width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden',
+          position: 'relative', display: 'grid', placeItems: 'center',
+          background: `repeating-linear-gradient(45deg, ${G.ink2} 0 8px, ${G.ink3} 8px 16px)`,
+        }}>
+          <div style={{ position: 'absolute', inset: 0, background: SEQUIN, opacity: .5 }} />
+          <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+            <div style={{ fontFamily: 'Bodoni Moda, serif', fontWeight: 700, color: G.cream, fontSize: size * 0.3, lineHeight: 1 }}>{initials}</div>
+            <div style={{ fontFamily: 'ui-monospace, monospace', color: G.muted, fontSize: Math.max(7, size * 0.075), letterSpacing: '.12em', marginTop: size * 0.06 }}>QUEEN</div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -325,7 +330,7 @@ function Podium({ rows, narrow, expandedId, onToggle, episodePicks, results, con
                 {narrow && isKing && (
                   <div style={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', fontSize: 24, zIndex: 2 }}>♛</div>
                 )}
-                <GlamHead size={headSize} ring={metal} name={p.queen} glow={isKing} dim={!p.queenAlive} />
+                <GlamHead size={headSize} ring={metal} name={p.name} glow={isKing} dim={!p.queenAlive} avatarUrl={p.avatarUrl} />
               </div>
               <div style={{ textAlign: narrow ? 'left' : 'center', flex: narrow ? '1' : 'none', minWidth: 0 }}>
                 <div style={{ fontFamily: 'Bodoni Moda, serif', fontWeight: 700, color: G.cream, fontSize: narrow ? 20 : 22, marginTop: narrow ? 0 : 12 }}>{p.name}</div>
@@ -414,7 +419,7 @@ function RankRow({ p, narrow, open, onToggle, episodePicks, results, contestants
       >
         <div style={{ fontFamily: 'Bodoni Moda, serif', fontWeight: 700, fontSize: narrow ? 22 : 28, color: G.muted, width: narrow ? 26 : 38, textAlign: 'center', flexShrink: 0 }}>{p.rank}</div>
         <MoveArrow delta={p.delta} />
-        <GlamHead size={narrow ? 46 : 54} ring={G.purple} name={p.queen} dim={!p.queenAlive} />
+        <GlamHead size={narrow ? 46 : 54} ring={G.purple} name={p.name} dim={!p.queenAlive} avatarUrl={p.avatarUrl} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 800, color: G.cream, fontSize: narrow ? 16 : 19 }}>{p.name}</span>
@@ -505,6 +510,7 @@ export default function PlayerView() {
       queen: queen?.name ?? '—', queenAlive: queen?.active ?? false,
       queenPlace, repicks: sp?.repick_count ?? 0,
       seasonPts: sp ? scoreSeasonPick(sp, results) : 0, streak,
+      avatarUrl: p.avatar_url ?? null,
     };
   });
 

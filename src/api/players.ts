@@ -32,7 +32,7 @@ export async function addPlayer(name: string, email: string): Promise<FantasyPla
 
 export async function updatePlayer(
   id: string,
-  updates: Partial<Pick<FantasyPlayer, 'name' | 'email'>>
+  updates: Partial<Pick<FantasyPlayer, 'name' | 'email' | 'avatar_url'>>
 ): Promise<FantasyPlayer> {
   const { data, error } = await supabase
     .from('fantasy_players')
@@ -52,6 +52,19 @@ export async function getPlayerByUserId(userId: string): Promise<FantasyPlayer |
     .maybeSingle();
   if (error) throw error;
   return data;
+}
+
+export async function uploadPlayerAvatar(playerId: string, file: File): Promise<string> {
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(playerId, file, { upsert: true, contentType: file.type });
+  if (uploadError) throw uploadError;
+
+  const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(playerId);
+  // Cache-bust so browsers pick up the new image immediately
+  const url = `${publicUrl}?t=${Date.now()}`;
+  await updatePlayer(playerId, { avatar_url: url });
+  return url;
 }
 
 export async function getFantasyTeams(): Promise<FantasyTeam[]> {
