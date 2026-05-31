@@ -4,6 +4,7 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { getPlayerByEmail } from '../../api/players';
 import { usePlayerByUserId, useUploadPlayerAvatar } from '../../hooks/usePlayers';
+import { useEpisodes } from '../../hooks/useEpisodes';
 import { useContestants, useEpisodeResults } from '../../hooks/useContestants';
 import { useSeasonPicks, useEpisodePicks, useUpsertSeasonPick, useAddEpisodePick, useRemoveEpisodePick } from '../../hooks/usePicks';
 import { MAX_WINNER_PICKS, MAX_LOSER_PICKS, REPICK_PENALTY, WINNER_PICK_POINTS, LOSER_PICK_POINTS } from '../../utils/scoring';
@@ -170,6 +171,8 @@ function PicksContent({ userId }: { userId: string }) {
   const { data: contestants = [] } = useContestants();
   const { data: results = [] } = useEpisodeResults();
   const { data: seasonPicks = [] } = useSeasonPicks();
+  const { data: episodesList = [] } = useEpisodes();
+  const episodeNames = Object.fromEntries(episodesList.map(e => [e.episode_number, e.name]));
   const { data: episodePicks = [] } = useEpisodePicks();
 
   const episodesWithResults = new Set(results.map(r => r.episode_number));
@@ -266,6 +269,12 @@ function PicksContent({ userId }: { userId: string }) {
                   selected={selectedEpisode}
                   onSelect={setSelectedEpisode}
                 />
+                {episodeNames[selectedEpisode] && (
+                  <div style={{ fontFamily: 'Bodoni Moda, serif', fontWeight: 700, fontSize: 15, color: G.cream }}>
+                    Ep {selectedEpisode}
+                    <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 400, fontSize: 13, color: G.muted, marginLeft: 8 }}>{episodeNames[selectedEpisode]}</span>
+                  </div>
+                )}
                 {isLocked ? (
                   <LockedEpisodeSummary
                     playerId={player.id}
