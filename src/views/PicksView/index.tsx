@@ -189,7 +189,6 @@ function PicksContent({ userId }: { userId: string }) {
   const pickedContestant = contestants.find(c => c.id === seasonPick?.contestant_id) ?? null;
   const seasonPickEliminated = pickedContestant != null && !pickedContestant.active;
   const isLocked = episodesWithResults.has(selectedEpisode);
-  const contestantName = (id: string) => contestants.find(c => c.id === id)?.name ?? '—';
 
   if (playerLoading) {
     return (
