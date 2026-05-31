@@ -371,17 +371,20 @@ function useIsAdmin() {
 }
 
 // ── Header ────────────────────────────────────────────────────────────────────
-function ScoreboardHeader({ currentEpisode, currentEpisodeName, narrow }: {
-  currentEpisode: number; currentEpisodeName: string; narrow: boolean;
+function ScoreboardHeader({ currentEpisode, currentEpisodeName, nextEpisodeName, narrow }: {
+  currentEpisode: number; currentEpisodeName: string; nextEpisodeName: string; narrow: boolean;
 }) {
   const isAdmin = useIsAdmin();
   const nextEpisode = currentEpisode + 1;
-  const epLabel = currentEpisodeName
+  const completedLabel = currentEpisodeName
     ? `Ep ${currentEpisode}: ${currentEpisodeName}`
     : `Episode ${currentEpisode}`;
-  const eyebrow = currentEpisode > 0
-    ? `Season 18 · ${epLabel} complete · Episode ${nextEpisode} up next`
-    : `Season 18 · Episode ${nextEpisode} coming up`;
+  const upNextLabel = nextEpisodeName
+    ? `Ep ${nextEpisode}: ${nextEpisodeName} up next`
+    : `Episode ${nextEpisode} up next`;
+  const eyebrowLines = currentEpisode > 0
+    ? [`Season 18 · ${completedLabel} complete`, upNextLabel]
+    : [nextEpisodeName ? `Season 18 · Ep ${nextEpisode}: ${nextEpisodeName} coming up` : `Season 18 · Episode ${nextEpisode} coming up`];
   const navLinks = (
     <>
       {isAdmin && (
@@ -418,8 +421,8 @@ function ScoreboardHeader({ currentEpisode, currentEpisodeName, narrow }: {
         {navLinks}
       </div>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontFamily: 'Outfit, sans-serif', letterSpacing: '.4em', fontSize: 11, fontWeight: 700, color: G.muted, textTransform: 'uppercase' }}>
-          {eyebrow}
+        <div style={{ fontFamily: 'Outfit, sans-serif', letterSpacing: '.4em', fontSize: 11, fontWeight: 700, color: G.muted, textTransform: 'uppercase', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {eyebrowLines.map((line, i) => <span key={i}>{line}</span>)}
         </div>
         <h1 style={{ margin: '10px 0 6px', fontFamily: 'Bodoni Moda, serif', fontWeight: 700, lineHeight: .95, fontSize: narrow ? 34 : 46, color: G.cream }}>
           Category Is:{' '}
@@ -497,7 +500,7 @@ export default function PlayerView() {
       fontFamily: 'Outfit, sans-serif',
     }}>
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
-        <ScoreboardHeader currentEpisode={currentEpisode} currentEpisodeName={episodeNames[currentEpisode] ?? ''} narrow={narrow} />
+        <ScoreboardHeader currentEpisode={currentEpisode} currentEpisodeName={episodeNames[currentEpisode] ?? ''} nextEpisodeName={episodeNames[currentEpisode + 1] ?? ''} narrow={narrow} />
 
         {rows.length === 0 ? (
           <div style={{ textAlign: 'center', color: G.muted, padding: '60px 0', fontFamily: 'Outfit' }}>
