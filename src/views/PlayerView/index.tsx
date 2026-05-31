@@ -567,7 +567,7 @@ export default function PlayerView() {
 
             {/* Ranked rows — all players on mobile, #4+ on desktop */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: narrow ? '0 16px 36px' : '0 26px 40px' }}>
-              {(narrow ? rows : rows.slice(3)).map(p => (
+              {rows.slice(3).map(p => (
                 <RankRow
                   key={p.id} p={p} narrow={narrow} open={expandedId === p.id} onToggle={toggle}
                   episodePicks={episodePicks} results={results} contestants={contestants}
