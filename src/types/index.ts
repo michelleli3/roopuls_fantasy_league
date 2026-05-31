@@ -29,6 +29,11 @@ export interface FantasyTeam {
   contestant_id: string;
 }
 
+export interface Episode {
+  episode_number: number;
+  name: string;
+}
+
 export interface SeasonPick {
   id: string;
   fantasy_player_id: string;

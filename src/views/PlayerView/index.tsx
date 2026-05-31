@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { usePlayers } from '../../hooks/usePlayers';
+import { useEpisodes } from '../../hooks/useEpisodes';
 import { useContestants, useEpisodeResults } from '../../hooks/useContestants';
 import { useSeasonPicks, useEpisodePicks } from '../../hooks/usePicks';
 import {
@@ -179,12 +180,13 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 // ── Breakdown panel ───────────────────────────────────────────────────────────
-function BreakdownPanel({ player, narrow, episodePicks, results, contestants }: {
+function BreakdownPanel({ player, narrow, episodePicks, results, contestants, episodeNames }: {
   player: PlayerRow;
   narrow: boolean;
   episodePicks: EpisodePick[];
   results: EpisodeResult[];
   contestants: Contestant[];
+  episodeNames: Record<number, string>;
 }) {
   const doneEpisodes = new Set(results.map(r => r.episode_number));
   const myPicks = episodePicks.filter(p => p.fantasy_player_id === player.id);
@@ -243,7 +245,12 @@ function BreakdownPanel({ player, narrow, episodePicks, results, contestants }: 
         {breakdowns.map(ep => (
           <div key={ep.ep} style={{ background: G.ink2, border: `1px solid ${G.line}`, borderRadius: 14, padding: '12px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span style={{ fontFamily: 'Bodoni Moda, serif', fontWeight: 700, color: G.cream, fontSize: 15 }}>Ep {ep.ep}</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+                <span style={{ fontFamily: 'Bodoni Moda, serif', fontWeight: 700, color: G.cream, fontSize: 15, flexShrink: 0 }}>Ep {ep.ep}</span>
+                {episodeNames[ep.ep] && (
+                  <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 12, color: G.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{episodeNames[ep.ep]}</span>
+                )}
+              </div>
               <ScorePill pts={ep.pts} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: narrow ? '1fr' : '1fr 1fr', gap: narrow ? 10 : 18 }}>
@@ -281,7 +288,7 @@ function PickCol({ label, picks }: { label: string; picks: PickResult[] }) {
 }
 
 // ── Podium ────────────────────────────────────────────────────────────────────
-function Podium({ rows, narrow, expandedId, onToggle, episodePicks, results, contestants }: {
+function Podium({ rows, narrow, expandedId, onToggle, episodePicks, results, contestants, episodeNames }: {
   rows: PlayerRow[];
   narrow: boolean;
   expandedId: string | null;
@@ -289,6 +296,7 @@ function Podium({ rows, narrow, expandedId, onToggle, episodePicks, results, con
   episodePicks: EpisodePick[];
   results: EpisodeResult[];
   contestants: Contestant[];
+  episodeNames: Record<number, string>;
 }) {
   const top3 = rows.slice(0, 3) as [PlayerRow, PlayerRow?, PlayerRow?];
   const order = narrow
@@ -386,7 +394,7 @@ function Podium({ rows, narrow, expandedId, onToggle, episodePicks, results, con
               shut the library ✕
             </button>
           </div>
-          <BreakdownPanel player={expandedTop} narrow={false} episodePicks={episodePicks} results={results} contestants={contestants} />
+          <BreakdownPanel player={expandedTop} narrow={false} episodePicks={episodePicks} results={results} contestants={contestants} episodeNames={episodeNames} />
         </div>
       )}
     </>
@@ -394,9 +402,10 @@ function Podium({ rows, narrow, expandedId, onToggle, episodePicks, results, con
 }
 
 // ── Rank row ──────────────────────────────────────────────────────────────────
-function RankRow({ p, narrow, open, onToggle, episodePicks, results, contestants }: {
+function RankRow({ p, narrow, open, onToggle, episodePicks, results, contestants, episodeNames }: {
   p: PlayerRow; narrow: boolean; open: boolean; onToggle: (id: string) => void;
   episodePicks: EpisodePick[]; results: EpisodeResult[]; contestants: Contestant[];
+  episodeNames: Record<number, string>;
 }) {
   const [hover, setHover] = useState(false);
   return (
@@ -442,7 +451,7 @@ function RankRow({ p, narrow, open, onToggle, episodePicks, results, contestants
           <span style={{ color: G.muted, fontSize: 14, display: 'inline-block', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .25s' }}>▾</span>
         </div>
       </button>
-      {open && <BreakdownPanel player={p} narrow={narrow} episodePicks={episodePicks} results={results} contestants={contestants} />}
+      {open && <BreakdownPanel player={p} narrow={narrow} episodePicks={episodePicks} results={results} contestants={contestants} episodeNames={episodeNames} />}
     </div>
   );
 }
@@ -458,11 +467,16 @@ function useIsAdmin() {
 }
 
 // ── Header ────────────────────────────────────────────────────────────────────
-function ScoreboardHeader({ currentEpisode, narrow }: { currentEpisode: number; narrow: boolean }) {
+function ScoreboardHeader({ currentEpisode, currentEpisodeName, narrow }: {
+  currentEpisode: number; currentEpisodeName: string; narrow: boolean;
+}) {
   const isAdmin = useIsAdmin();
   const nextEpisode = currentEpisode + 1;
+  const epLabel = currentEpisodeName
+    ? `Ep ${currentEpisode}: ${currentEpisodeName}`
+    : `Episode ${currentEpisode}`;
   const eyebrow = currentEpisode > 0
-    ? `Season 18 · Episode ${currentEpisode} complete · Episode ${nextEpisode} up next`
+    ? `Season 18 · ${epLabel} complete · Episode ${nextEpisode} up next`
     : `Season 18 · Episode ${nextEpisode} coming up`;
   return (
     <div style={{
@@ -515,6 +529,9 @@ export default function PlayerView() {
   const { data: results = [] } = useEpisodeResults();
   const { data: seasonPicks = [] } = useSeasonPicks();
   const { data: episodePicks = [] } = useEpisodePicks();
+  const { data: episodesList = [] } = useEpisodes();
+
+  const episodeNames = Object.fromEntries(episodesList.map(e => [e.episode_number, e.name]));
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const narrow = useNarrow();
 
@@ -567,7 +584,7 @@ export default function PlayerView() {
       fontFamily: 'Outfit, sans-serif',
     }}>
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
-        <ScoreboardHeader currentEpisode={currentEpisode} narrow={narrow} />
+        <ScoreboardHeader currentEpisode={currentEpisode} currentEpisodeName={episodeNames[currentEpisode] ?? ''} narrow={narrow} />
 
         {rows.length === 0 ? (
           <div style={{ textAlign: 'center', color: G.muted, padding: '60px 0', fontFamily: 'Outfit' }}>
@@ -582,6 +599,7 @@ export default function PlayerView() {
             <Podium
               rows={rows} narrow={narrow} expandedId={expandedId} onToggle={toggle}
               episodePicks={episodePicks} results={results} contestants={contestants}
+              episodeNames={episodeNames}
             />
 
             {/* Divider */}
@@ -599,6 +617,7 @@ export default function PlayerView() {
                 <RankRow
                   key={p.id} p={p} narrow={narrow} open={expandedId === p.id} onToggle={toggle}
                   episodePicks={episodePicks} results={results} contestants={contestants}
+                  episodeNames={episodeNames}
                 />
               ))}
             </div>

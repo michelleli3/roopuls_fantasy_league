@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useContestants, useEpisodeResults, useAddEpisodeResult, useDeleteEpisodeResult } from '../../../hooks/useContestants';
+import { useEpisodes, useUpsertEpisodeName } from '../../../hooks/useEpisodes';
 import type { EpisodeResult } from '../../../types';
 
 const PLACEMENTS: EpisodeResult['placement'][] = ['WIN', 'HIGH', 'SAFE', 'LOW', 'BTM2', 'ELIM', 'WINNER'];
@@ -24,11 +25,27 @@ const BLANK_FORM = {
 export default function EpisodeLog() {
   const { data: contestants = [] } = useContestants();
   const { data: results = [], isLoading } = useEpisodeResults();
+  const { data: episodesMeta = [] } = useEpisodes();
   const addResult = useAddEpisodeResult();
   const deleteResult = useDeleteEpisodeResult();
+  const upsertName = useUpsertEpisodeName();
 
   const [episode, setEpisode] = useState(1);
   const [form, setForm] = useState(BLANK_FORM);
+  const [episodeName, setEpisodeName] = useState('');
+
+  const currentName = episodesMeta.find(e => e.episode_number === episode)?.name ?? '';
+
+  useEffect(() => {
+    setEpisodeName(currentName);
+  }, [episode, currentName]);
+
+  function handleNameBlur() {
+    const trimmed = episodeName.trim();
+    if (trimmed !== currentName) {
+      upsertName.mutate({ episode_number: episode, name: trimmed });
+    }
+  }
 
   const maxEpisode = results.reduce((m, r) => Math.max(m, r.episode_number), 0);
   const episodes = Array.from({ length: Math.max(maxEpisode, episode) }, (_, i) => i + 1);
@@ -79,9 +96,24 @@ export default function EpisodeLog() {
         </div>
       </div>
 
+      {/* Episode name */}
+      <div className="flex items-center gap-3">
+        <label className="text-sm font-medium text-gray-700 shrink-0">Name</label>
+        <input
+          type="text"
+          value={episodeName}
+          onChange={e => setEpisodeName(e.target.value)}
+          onBlur={handleNameBlur}
+          onKeyDown={e => e.key === 'Enter' && e.currentTarget.blur()}
+          placeholder={`Episode ${episode} name…`}
+          className="border rounded-lg px-3 py-1.5 text-sm flex-1 max-w-xs"
+        />
+        {upsertName.isPending && <span className="text-xs text-gray-400">Saving…</span>}
+      </div>
+
       {/* Add result form */}
       <form onSubmit={handleSubmit} className="bg-gray-50 rounded-xl p-4 space-y-3">
-        <p className="text-sm font-semibold text-gray-700">Add result — Episode {episode}</p>
+        <p className="text-sm font-semibold text-gray-700">Add result — Episode {episode}{currentName ? `: ${currentName}` : ''}</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="col-span-2">
             <label className="text-xs text-gray-500 mb-1 block">Contestant</label>
